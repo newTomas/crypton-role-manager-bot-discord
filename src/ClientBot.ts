@@ -1,9 +1,8 @@
-import {Client, Intents} from 'discord.js'
+import {Client, ClientEvents, Guild, Intents} from 'discord.js'
 import CommandManager from './CommandManager'
-import {EventNames} from './enums'
 import config from '../config'
 
-const INTENTS = [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES]
+const INTENTS = [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MEMBERS]
 
 export default class ClientBot {
   private readonly client: Client
@@ -23,11 +22,21 @@ export default class ClientBot {
     return new CommandManager(this.client.application.commands)
   }
 
-  public on(eventName: EventNames, callback: (...args: any[]) => void): void {
+  public on<K extends keyof ClientEvents>(eventName: K, callback: (...args: ClientEvents[K]) => void): void {
     this.client.on(eventName, callback)
   }
 
-  public once(eventName: EventNames, callback: (...args: any[]) => void): void {
+  public once<K extends keyof ClientEvents>(eventName: K, callback: (...args: ClientEvents[K]) => void): void {
     this.client.once(eventName, callback)
+  }
+
+  public async getGuildByID(guildID: string): Promise<Guild | undefined> {
+    const guilds = await this.client.guilds.fetch()
+    const guild = guilds.find(value => value.id === guildID)
+    return guild?.fetch()
+  }
+
+  public destroy(): void {
+    this.client.destroy()
   }
 }
