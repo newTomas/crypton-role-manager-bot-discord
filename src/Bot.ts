@@ -52,7 +52,7 @@ export default class Bot {
   private startEventListeners(): void {
     process.on('unhandledRejection', error => console.error('Unhandled promise rejection:', error))
     for (const event of this.events) {
-      if (event.once) this.client.once(event.name, (...args) => event.execute(...args, this.cron))
+      if (event.once) this.client.once(event.name, event.execute)
       else this.client.on(event.name, (...args) => event.execute(...args, this.commands, this.storage))
     }
   }
