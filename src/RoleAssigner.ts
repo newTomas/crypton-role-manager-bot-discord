@@ -1,4 +1,5 @@
 import {Guild, GuildMember, Permissions} from 'discord.js'
+import {GuildModel} from './Storage/types'
 import Storage from './Storage/Storage'
 import CryptonData from './CryptonData'
 import ClientBot from './ClientBot'

@@ -23,5 +23,5 @@ declare interface OptionCommand {
 declare interface ExecuteEvent {
   name: keyof ClientEvents,
   once: boolean,
-  execute: (...args: any[]) => void
+  execute: (...args: any[]) => boolean | Promise<boolean>
 }

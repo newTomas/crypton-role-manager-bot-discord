@@ -1,4 +1,5 @@
 import {ModelCtor, Options, Sequelize} from 'sequelize'
+import {GuildModel} from './types'
 import {GuildSQLite} from './models/types'
 import guildModel from './models/guild'
 import config from '../../config'
@@ -12,14 +13,16 @@ const OPTIONS_SEQUELIZE: Options = {
 export default class Storage {
   private readonly database: Sequelize
   private readonly Guilds: ModelCtor<any>
+  private readonly clearOnStart: boolean
 
-  public constructor() {
-    this.database = new Sequelize(OPTIONS_SEQUELIZE)
+  public constructor(pathToStorage?: string, clearOnStart?: boolean) {
+    this.database = new Sequelize({...OPTIONS_SEQUELIZE, storage: pathToStorage ?? OPTIONS_SEQUELIZE.storage})
     this.Guilds = this.database.define(...guildModel)
+    this.clearOnStart = clearOnStart ?? false
   }
 
   public async syncModels(): Promise<void> {
-    await this.Guilds.sync()
+    await this.Guilds.sync({force: this.clearOnStart})
   }
 
   public async addGuild(id: string, roleAcademyID: string): Promise<void> {

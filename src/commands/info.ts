@@ -7,7 +7,7 @@ const command: ExecuteCommand = {
   description: descriptions.INFO,
   execute: async (interaction, storage) => {
     const guildStorage = await storage.getGuild(interaction.guild!.id)
-    const role = interaction.guild!.roles.cache.find(value => value.id === guildStorage?.roleAcademyID)
+    const role = guildStorage?.roleAcademyID ? interaction.guild!.roles.cache.get(guildStorage.roleAcademyID) : null
     await interaction.editReply(replies.INFO(role?.name, guildStorage?.active))
   }
 }
