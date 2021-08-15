@@ -2,7 +2,6 @@
   "name": "crypton-role-manager-bot",
   "version": "1.0.0",
   "description": "Бот для контроля доступа подписчиков Crypton Academy к информации в Discord",
-  "main": "index.js",
   "scripts": {
     "build": "rimraf dist && tsc",
     "watch": "rimraf dist && tsc --watch",
