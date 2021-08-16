@@ -6,9 +6,9 @@ const command: ExecuteCommand = {
   name: 'start',
   description: descriptions.START,
   execute: async (interaction, storage) => {
-    const guildStorage = await storage.getGuild(interaction.guild!.id)
-    if (!guildStorage?.roleAcademyID) return interaction.editReply(replies.FIRST_SET_ROLE)
-    await storage.editGuildActive(guildStorage.id, true)
+    const guildStorage = await storage.getGuildByID(interaction.guild!.id)
+    if (!guildStorage?.roleID) return interaction.editReply(replies.FIRST_SET_ROLE)
+    await storage.editGuild(guildStorage.id, guildStorage.roleID, true)
     return  interaction.editReply(replies.ACTIVATED)
   }
 }

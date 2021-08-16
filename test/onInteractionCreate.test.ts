@@ -6,9 +6,10 @@ import Storage from '../src/Storage/Storage'
 import replies from '../src/replies'
 
 const ephemeral = {ephemeral: true}
+const PATH_TO_STORAGE = 'onInteractionCreate/database.sqlite'
 
 describe('onInteractionCreate', () => {
-  const storage = new Storage('onInteractionCreate/database.sqlite', true)
+  const storage = new Storage(PATH_TO_STORAGE)
   const commands = [{name: 'start', execute: sinon.fake()}, {name: 'stop', execute: sinon.fake()}]
   const interactionDefault = {
     isCommand: () => true,

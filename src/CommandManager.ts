@@ -10,6 +10,7 @@ export default class CommandManager {
 
   public async updateCommands(commands: Command[]): Promise<void> {
     await this.applicationCommandManager.set(commands)
+    console.info('Commands have been updated!')
   }
 
   public async fetchCommands(): Promise<Command[]> {

@@ -1,50 +1,63 @@
-import {ModelCtor, Options, Sequelize} from 'sequelize'
-import {GuildModel} from './types'
-import {GuildSQLite} from './models/types'
-import guildModel from './models/guild'
-import config from '../../config'
+import {Model, ModelCtor, Options, Sequelize} from 'sequelize'
+import {GuildModel, guildModelCreator} from './models/guild'
+import {MemberModel, memberModelCreator} from './models/members'
 
-const OPTIONS_SEQUELIZE: Options = {
+const OPTIONS_STORAGE: Options = {
   dialect: 'sqlite',
-  storage: config.PATH_TO_ROOT_DIR + '/database.sqlite',
   logging: false
 }
 
 export default class Storage {
   private readonly database: Sequelize
-  private readonly Guilds: ModelCtor<any>
-  private readonly clearOnStart: boolean
+  private readonly Guilds: ModelCtor<Model>
+  private readonly Members: ModelCtor<Model>
 
-  public constructor(pathToStorage?: string, clearOnStart?: boolean) {
-    this.database = new Sequelize({...OPTIONS_SEQUELIZE, storage: pathToStorage ?? OPTIONS_SEQUELIZE.storage})
-    this.Guilds = this.database.define(...guildModel)
-    this.clearOnStart = clearOnStart ?? false
+  public constructor(pathToStorage: string) {
+    this.database = new Sequelize({...OPTIONS_STORAGE, storage: pathToStorage})
+    this.Guilds = this.database.define(...guildModelCreator)
+    this.Members = this.database.define(...memberModelCreator)
   }
 
-  public async syncModels(): Promise<void> {
-    await this.Guilds.sync({force: this.clearOnStart})
+  public async syncModels(clear?: boolean): Promise<void> {
+    await Promise.all([
+      this.Guilds.sync({force: clear}),
+      this.Members.sync({force: clear})
+    ])
   }
 
-  public async addGuild(id: string, roleAcademyID: string): Promise<void> {
-    await this.Guilds.create({id, role_academy_id: roleAcademyID, active: false})
+  public async addMember(userID: string, isMember: boolean): Promise<void> {
+    await this.Members.create({userID, isMember})
   }
 
-  public async editGuildActive(guildID: string, active: boolean): Promise<void> {
-    await this.Guilds.update({active}, {where: {id: guildID}})
+  public async editMember(userID: string, isMember: boolean): Promise<void> {
+    await this.Members.update({isMember}, {where: {userID}})
   }
 
-  public async editGuildRoleAcademyID(guildID: string, roleAcademyID: string): Promise<void> {
-    await this.Guilds.update({role_academy_id: roleAcademyID}, {where: {id: guildID}})
+  public async getMemberByID(userID: string): Promise<MemberModel | null> {
+    return await this.Members.findOne({where: {userID}}) as MemberModel | null
   }
 
-  public async getGuild(id: string): Promise<GuildModel | undefined> {
-    const guild = await this.Guilds.findOne({where: {id}}) as GuildSQLite
-    if (!guild) return undefined
-    return {id: guild.id, roleAcademyID: guild.role_academy_id, active: guild.active}
+  public async removeMember(userID: string, updatedAt?: Date): Promise<void> {
+    await this.Members.destroy({where: {userID, updatedAt}})
+  }
+
+  public async addGuild(guildID: string, roleID: string, active: boolean): Promise<void> {
+    await this.Guilds.create({id: guildID, roleID, active})
+  }
+
+  public async editGuild(guildID: string, newRoleID: string | null, newActive: boolean): Promise<void> {
+    await this.Guilds.update({roleID: newRoleID, active: newActive}, {where: {id: guildID}})
+  }
+
+  public async getGuildByID(guildID: string): Promise<GuildModel | null> {
+    return await this.Guilds.findOne({where: {id: guildID}}) as GuildModel | null
   }
 
   public async getGuilds(): Promise<GuildModel[]> {
-    const guilds = await this.Guilds.findAll() as GuildSQLite[]
-    return guilds.map(guild => ({id: guild.id, roleAcademyID: guild.role_academy_id, active: guild.active}))
+    return await this.Guilds.findAll() as unknown as GuildModel[]
+  }
+
+  public async removeGuild(guildID: string): Promise<void> {
+    await this.Guilds.destroy({where: {id: guildID}})
   }
 }

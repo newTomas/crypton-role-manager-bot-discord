@@ -1,7 +1,5 @@
 import {Guild, GuildMember, Permissions} from 'discord.js'
-import {GuildModel} from './Storage/types'
 import Storage from './Storage/Storage'
-import CryptonData from './CryptonData'
 import ClientBot from './ClientBot'
 import {sleep} from './utils'
 
@@ -12,13 +10,12 @@ type MillisecondsIntervals = {
 
 export default class RoleAssigner {
   private readonly storage: Storage
-  private readonly crypton: CryptonData
   private readonly client: ClientBot
   private readonly millisecondsIntervals: MillisecondsIntervals
+  private roleAcademyID?: string
 
-  public constructor(storage: Storage, crypton: CryptonData, client: ClientBot) {
+  public constructor(storage: Storage, client: ClientBot) {
     this.storage = storage
-    this.crypton = crypton
     this.client = client
     this.millisecondsIntervals = {guild: 120, member: 40}
     // TODO Во избежание лимитов API Discord (не более 50 запросов/сек).
@@ -27,49 +24,66 @@ export default class RoleAssigner {
     //  Если будет 10000 участников на сервере, которым требуется изменить роль, то это займет ≈7 минут.
   }
 
-  private static async isCorrectRoleAcademy(guild: Guild, roleAcademyID: string): Promise<boolean> {
-    const roleAcademyGuild = await guild.roles.fetch(roleAcademyID)
-    const positionRoleAcademyGuild = roleAcademyGuild?.rawPosition
+  private static async isCorrectRoleAcademy(guild: Guild, roleID: string): Promise<boolean> {
+    const roleGuild = await guild.roles.fetch(roleID)
+    const positionRoleGuild = roleGuild?.rawPosition
     const positionBotRole = guild.me?.roles.botRole?.rawPosition
-    return !!positionRoleAcademyGuild && !!positionBotRole && positionRoleAcademyGuild < positionBotRole
+    return !!positionRoleGuild && !!positionBotRole && positionRoleGuild < positionBotRole
   }
 
   public async startAssigning(): Promise<void> {
-    const guildsStorage = await this.storage.getGuilds()
-    await this.assignInEachGuild(guildsStorage)
+    await this.assignInEachGuild()
   }
 
-  private async assignInEachGuild(guildsStorage: GuildModel[]): Promise<void> {
+  private async assignInEachGuild(): Promise<void> {
+    const guildsStorage = await this.storage.getGuilds()
     for (const guildStorage of guildsStorage) {
+      if (!guildStorage.roleID || !guildStorage.active) continue
+
       await sleep(this.millisecondsIntervals.guild)
-      if (!guildStorage.roleAcademyID || !guildStorage.active) continue
 
       const guild = await this.client.getGuildByID(guildStorage.id)
-      if (!guild || guild.deleted) continue
+      if (!guild || guild.deleted) {
+        await this.storage.removeGuild(guildStorage.id)
+        continue
+      }
 
-      const isCorrectRoleAcademy = await RoleAssigner.isCorrectRoleAcademy(guild, guildStorage.roleAcademyID)
-      if (!isCorrectRoleAcademy) continue
+      const isCorrectRoleAcademy = await RoleAssigner.isCorrectRoleAcademy(guild, guildStorage.roleID)
+      if (!isCorrectRoleAcademy) {
+        await this.storage.editGuild(guildStorage.id, null, false)
+        continue
+      }
 
-      const members = await guild.members.fetch()
-      await this.assignMembers(members.values(), guildStorage.roleAcademyID)
+      this.roleAcademyID = guildStorage.roleID
+      await this.assignMembers(guild)
     }
   }
 
-  private async assignMembers(members: IterableIterator<GuildMember>, roleAcademyID: string): Promise<void> {
-    for (const member of members) {
-      const isAdmin = member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)
-      if (member.user.bot || member.deleted || isAdmin) continue
-      const hasRoleAcademy = member.roles.cache.has(roleAcademyID)
-      await sleep(this.millisecondsIntervals.member)
-      const isMemberCrypton = this.crypton.isMember(member.user.tag)
+  private async assignMembers(guild: Guild): Promise<void> {
+    const members = await guild.members.fetch()
+    for (const member of members.values()) {
+      await this.assignMember(member)
+    }
+  }
 
-      if (isMemberCrypton && !hasRoleAcademy) {
-        await member.roles.add(roleAcademyID)
-        console.info(member.user.tag, '||', member.guild.name, '|| added role')
-      } else if (!isMemberCrypton && hasRoleAcademy) {
-        await member.roles.remove(roleAcademyID)
-        console.info(member.user.tag, '||', member.guild.name, '|| removed role')
-      }
+  private async assignMember(member: GuildMember): Promise<void> {
+    const isAdmin = member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)
+    if (member.user.bot || member.deleted || isAdmin) return
+
+    const memberStorage = await this.storage.getMemberByID(member.user.id)
+    if (!memberStorage) return
+
+    const hasRoleAcademy = member.roles.cache.has(this.roleAcademyID!)
+    if (memberStorage.isMember && !hasRoleAcademy) {
+      await sleep(this.millisecondsIntervals.member)
+      await member.roles.add(this.roleAcademyID!)
+      console.info(member.user.tag, '||', member.guild.name, '|| added role')
+    } else if (!memberStorage.isMember && hasRoleAcademy) {
+      await sleep(this.millisecondsIntervals.member)
+      await member.roles.remove(this.roleAcademyID!)
+      console.info(member.user.tag, '||', member.guild.name, '|| removed role')
+    } else if (!memberStorage.isMember && !hasRoleAcademy) {
+      await this.storage.removeMember(memberStorage.userID, memberStorage.updatedAt)
     }
   }
 }

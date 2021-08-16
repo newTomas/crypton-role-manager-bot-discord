@@ -12,9 +12,9 @@ const command: ExecuteCommand = {
     if (!role) return interaction.editReply(replies.SET_ROLE)
     if (roleBot.rawPosition <= role.position || role.position === 0) return interaction.editReply(replies.ROLE_SHOULD_LOWER)
 
-    const guildStorage = await storage.getGuild(interaction.guild!.id)
-    if (!guildStorage) await storage.addGuild(interaction.guild!.id, role.id)
-    else await storage.editGuildRoleAcademyID(guildStorage.id, role.id)
+    const guildStorage = await storage.getGuildByID(interaction.guild!.id)
+    if (!guildStorage) await storage.addGuild(interaction.guild!.id, role.id, false)
+    else await storage.editGuild(guildStorage.id, role.id, guildStorage.active)
 
     return interaction.editReply(replies.ROLE_ASSIGNED(role.name))
   },
