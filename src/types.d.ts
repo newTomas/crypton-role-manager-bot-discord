@@ -1,4 +1,4 @@
-import {ClientEvents, CommandInteraction} from 'discord.js'
+import {ApplicationCommandOptionType, ClientEvents, CommandInteraction, CommandOptionNonChoiceResolvableType, CommandOptionNumericResolvableType} from 'discord.js'
 import Storage from './Storage/Storage'
 
 declare interface ExecuteCommand extends Command {
@@ -14,7 +14,7 @@ declare interface Command {
 declare interface OptionCommand {
   name: string,
   description: string,
-  type: 'STRING' | 'INTEGER' | 'NUMBER' | 'BOOLEAN' | 'USER' | 'CHANNEL' | 'ROLE' | 'MENTIONABLE'
+  type: ApplicationCommandOptionType.Role,
   required?: boolean,
   choices: undefined,
   options: undefined

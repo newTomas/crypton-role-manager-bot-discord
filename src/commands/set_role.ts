@@ -1,13 +1,14 @@
 import {ExecuteCommand} from '../types'
 import descriptions from '../description'
 import replies from '../replies'
+import { ApplicationCommandOptionType } from 'discord.js'
 
 const command: ExecuteCommand = {
   name: 'set_role',
   description: descriptions.SET_ROLE,
   execute: async (interaction, storage) => {
-    const role = interaction.options.getRole('role')
-    const roleBot = interaction.guild!.me?.roles.botRole
+    const role = interaction.options.get('role')?.role
+    const roleBot = interaction.guild!.members.me?.roles.botRole
     if (!roleBot) return
     if (!role) return interaction.editReply(replies.SET_ROLE)
     if (roleBot.rawPosition <= role.position || role.position === 0) return interaction.editReply(replies.ROLE_SHOULD_LOWER)
@@ -22,7 +23,7 @@ const command: ExecuteCommand = {
     {
       name: 'role',
       description: 'Роль которая будет назначаться участникам',
-      type: 'ROLE',
+      type: ApplicationCommandOptionType.Role,
       required: true,
       choices: undefined,
       options: undefined

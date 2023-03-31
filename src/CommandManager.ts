@@ -1,4 +1,4 @@
-import {ApplicationCommandManager} from 'discord.js'
+import {ApplicationCommandManager, ApplicationCommandOptionType} from 'discord.js'
 import {Command} from './types'
 
 export default class CommandManager {

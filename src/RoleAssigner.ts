@@ -1,4 +1,4 @@
-import {Guild, GuildMember, Permissions} from 'discord.js'
+import {AuditLogEvent, Guild, GuildMember, Permissions, PermissionsBitField} from 'discord.js'
 import Storage from './Storage/Storage'
 import ClientBot from './ClientBot'
 import {sleep} from './utils'
@@ -27,7 +27,7 @@ export default class RoleAssigner {
   private static async isCorrectRoleAcademy(guild: Guild, roleID: string): Promise<boolean> {
     const roleGuild = await guild.roles.fetch(roleID)
     const positionRoleGuild = roleGuild?.rawPosition
-    const positionBotRole = guild.me?.roles.botRole?.rawPosition
+    const positionBotRole = guild.members.me?.roles.botRole?.rawPosition
     return !!positionRoleGuild && !!positionBotRole && positionRoleGuild < positionBotRole
   }
 
@@ -43,7 +43,7 @@ export default class RoleAssigner {
       await sleep(this.millisecondsIntervals.guild)
 
       const guild = await this.client.getGuildByID(guildStorage.id)
-      if (!guild || guild.deleted) {
+      if (!guild) {
         await this.storage.removeGuild(guildStorage.id)
         continue
       }
@@ -67,8 +67,8 @@ export default class RoleAssigner {
   }
 
   private async assignMember(member: GuildMember): Promise<void> {
-    const isAdmin = member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)
-    if (member.user.bot || member.deleted || isAdmin) return
+    const isAdmin = member.permissions.has(PermissionsBitField.Flags.Administrator)
+    if (member.user.bot || isAdmin) return
 
     const memberStorage = await this.storage.getMemberByID(member.user.id)
     if (!memberStorage) return

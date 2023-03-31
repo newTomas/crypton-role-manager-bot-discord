@@ -1,5 +1,5 @@
-import {Interaction, Permissions} from 'discord.js'
-import {ExecuteCommand, ExecuteEvent} from '../types'
+import { Interaction, PermissionsBitField } from 'discord.js'
+import { ExecuteCommand, ExecuteEvent } from '../types'
 import Storage from '../Storage/Storage'
 import replies from '../replies'
 
@@ -8,10 +8,10 @@ const event: ExecuteEvent = {
   once: false,
   execute: async (interaction: Interaction, commands: ExecuteCommand[], storage: Storage) => {
     if (!interaction.isCommand() || !interaction.guild || interaction.user.bot) return false
-    await interaction.deferReply({ephemeral: true})
+    await interaction.deferReply({ ephemeral: true })
 
-    const permissions = interaction.member?.permissions as Permissions
-    if (!permissions || !permissions.has(Permissions.FLAGS.ADMINISTRATOR)) {
+    const permissions = interaction.member?.permissions as PermissionsBitField
+    if (!permissions || !permissions.has(PermissionsBitField.Flags.Administrator)) {
       await interaction.editReply(replies.ONLY_ADMIN)
       return true
     }

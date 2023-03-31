@@ -1,8 +1,7 @@
-import {RedisClient, createClient} from 'redis'
+import {RedisClientType, createClient} from 'redis'
 import {EventsMember} from './enums'
 import config from '../config'
 
-type Message = `{"discord": "${string}"}`
 const OPTIONS_REDIS = {
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
@@ -10,22 +9,26 @@ const OPTIONS_REDIS = {
 }
 
 export default class CryptonEventsHandler {
-  private readonly client: RedisClient
+  private readonly client: RedisClientType
 
   public constructor() {
-    this.client = createClient(OPTIONS_REDIS)
+    this.client = createClient({url: `redis://:${OPTIONS_REDIS.auth_pass}@${OPTIONS_REDIS.host}:${OPTIONS_REDIS.port}`})
   }
 
-  public subscribe(): void {
-    this.client.subscribe(EventsMember.addMember, EventsMember.removeMember)
+  public async connect(){
+    await this.client.connect();
+  }
+
+  public subscribe(callback: (event: string, message: string) => void): void {
+    this.client.subscribe(EventsMember.addMember, message => callback(EventsMember.addMember, message))
+    this.client.subscribe(EventsMember.removeMember, message => callback(EventsMember.removeMember, message))
+    this.client.on("message", (...args) => {
+      console.log("message", args);
+    })
   }
 
   public stop(): void {
     this.client.quit()
-  }
-
-  public onMessage(callback: (event: string, message: Message) => void): void {
-    this.client.on('message', callback)
   }
 
   public onError(callback: <T extends Error>(error: T) => void): void {

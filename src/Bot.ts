@@ -63,9 +63,8 @@ export default class Bot {
   }
 
   private startListenCrypton(): void {
-    this.cryptonHandler.subscribe()
-    this.cryptonHandler.onError(error => console.error('Redis threw Error:', error))
-    this.cryptonHandler.onMessage(async (event, message) => {
+    this.cryptonHandler.connect();
+    this.cryptonHandler.subscribe(async (event, message) => {
       try {
         console.info('New Redis Event: ', event, message)
         if (!(event in EventsMember)) return
@@ -78,6 +77,7 @@ export default class Bot {
         else await this.storage.editMember(userID, isMember)
       } catch (error) {console.error('Redis callback onMessage threw Error: ', error)}
     })
+    this.cryptonHandler.onError(error => console.error('Redis threw Error:', error))
   }
 
   public destroy(): void {

@@ -1,15 +1,15 @@
-import {Client, ClientEvents, Guild, Intents} from 'discord.js'
+import { Client, ClientEvents, Guild, GatewayIntentBits } from 'discord.js'
 import CommandManager from './CommandManager'
 import config from '../config'
 
-const INTENTS = [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MEMBERS]
+const INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers]
 
 export default class ClientBot {
   private readonly client: Client
   private readonly token: string
 
   public constructor() {
-    this.client = new Client({intents: INTENTS})
+    this.client = new Client({ intents: INTENTS })
     this.token = config.TOKEN
   }
 
